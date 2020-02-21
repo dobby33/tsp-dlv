@@ -37,7 +37,7 @@ class TSP:
             print("Given strategy is undefined")
 
     def find_shortest_path_with_local_search(self):
-        self.generate_first_solution()
+        self.generate_first_solution_random()
         repeat = self.local_search_2opt()
         while repeat:
             # self.show()
@@ -55,13 +55,22 @@ class TSP:
         for i in range(len(self.active_cities) - 1):
             self.min_dist += self.dm[self.shortest_path[i]][self.shortest_path[i + 1]]
 
+    def generate_first_solution_random(self):
+        self.shortest_path = list(np.random.permutation(self.active_cities))
+        self.min_dist = self.dm[self.shortest_path[-1]][self.shortest_path[0]]
+        for i in range(len(self.active_cities) - 1):
+            self.min_dist += self.dm[self.shortest_path[i]][self.shortest_path[i + 1]]
+
     def local_search_2opt(self):
         for start in range(len(self.active_cities)):
             for leng in range(2, int(len(self.active_cities))):
                 i = start
                 j = (start + leng) % len(self.active_cities)
-                diff = self.dm[self.shortest_path[(i - 1) % len(self.active_cities)]][self.shortest_path[i]] + self.dm[self.shortest_path[(j - 1) % len(self.active_cities)]][self.shortest_path[j]] - (
-                    self.dm[self.shortest_path[(i - 1) % len(self.active_cities)]][self.shortest_path[(j - 1) % len(self.active_cities)]] + self.dm[self.shortest_path[j]][self.shortest_path[i]] )
+                diff = self.dm[self.shortest_path[(i - 1) % len(self.active_cities)]][self.shortest_path[i]] + \
+                       self.dm[self.shortest_path[(j - 1) % len(self.active_cities)]][self.shortest_path[j]] - (
+                               self.dm[self.shortest_path[(i - 1) % len(self.active_cities)]][
+                                   self.shortest_path[(j - 1) % len(self.active_cities)]] +
+                               self.dm[self.shortest_path[j]][self.shortest_path[i]])
                 if diff > 0:
                     new_solution = []
                     tmp = []
@@ -82,14 +91,12 @@ class TSP:
                     return True
         return False
 
-
     def evaluate(self, path):
         cost = 0
         if len(path) == len(self.cities):
             path.append(path[0])
         for node in path:
             pass
-
 
     def search_shortest_path_with_pruning(self, start_city, path, distance, print_enabled):
         path.append(start_city)
@@ -117,7 +124,6 @@ class TSP:
             if city not in path:
                 self.search_shortest_path_with_pruning(city, list(path), int(distance), print_enabled)
 
-
     def find_shortest_path_with_pruning_and_sorting(self, dm, chosen_city, path, active_cities, distance, print_enabled,
                                                     tries):
         scm = []
@@ -126,7 +132,6 @@ class TSP:
         self.find_shortest_path_with_pruning_and_sorting_helper(dm, scm, chosen_city, path, active_cities, distance,
                                                                 print_enabled,
                                                                 tries)
-
 
     def find_shortest_path_with_pruning_and_sorting_helper(self, dm, scm, chosen_city, path, active_cities, distance,
                                                            print_enabled,
@@ -162,14 +167,12 @@ class TSP:
                                                                         print_enabled, tries)
                 curr_tries -= 1
 
-
     def get_shortest_path_and_min_dist(self, make_loop=False):
         self.rearange_solution()
         if make_loop:
             if self.shortest_path[-1] != 0:
                 self.shortest_path.append(0)
         return self.shortest_path, self.min_dist
-
 
     def show(self):
         cities = []
@@ -195,9 +198,14 @@ class DLV:
         self.time = 0
         self.shortest_path = []
 
+    def reset(self):
+        self.time = 0
+        self.shortest_path = []
+
     def greedy_search(self, enable_print=False):
         cargo = [0]
         latest_cargo_time = 0
+        self.time = self.deliveries[0][1]
         for city, dlv_time in self.deliveries:
             if dlv_time <= latest_cargo_time:
                 cargo.append(city)
@@ -213,6 +221,18 @@ class DLV:
                 self.shortest_path.append(shortest_path)
                 latest_cargo_time = self.time
                 cargo = [0, city]
+                if dlv_time > self.time:
+                    self.time += dlv_time - self.time
+        if len(cargo) > 1:
+            cargo = list(set(cargo))
+            tsp = TSP(self.cities, self.dm, self.deliveries)
+            tsp.set_active_cities(cities=cargo)
+            tsp.search_shortest_path(2)
+            shortest_path, min_dist = tsp.get_shortest_path_and_min_dist(make_loop=True)
+            if enable_print:
+                tsp.show()
+            self.time += min_dist
+            self.shortest_path.append(shortest_path)
 
     def reverse_greedy_search(self, enable_print=False):
         min_i, min_end = 1, sys.maxsize
@@ -267,7 +287,7 @@ class DLV:
 
 class ProblemGenerator:
     @staticmethod
-    def generate_dm(n_cities, n_deliveries, max_time=1000, seed=1):
+    def generate_dm(n_cities, n_deliveries, max_time=1000, seed=1, start_cargo = True):
         cities = []
         if seed is not None:
             random.seed(seed)
@@ -292,22 +312,50 @@ class ProblemGenerator:
             dm.append(dm_row)
         deliveries = []
 
-        for i in range(1, n_cities):
-            if random.random() < 0.1:
-                deliveries.append([cities[i][0], 0])
-        for _ in range(n_deliveries):
+        if start_cargo:
+            for i in range(1, min(n_cities, n_deliveries-1)):
+                if random.random() < 0.1:
+                    deliveries.append([cities[i][0], 0])
+        while len(deliveries) < n_deliveries-1:
             deliveries.append([cities[random.randint(1, n_cities - 1)][0], random.randint(0, max_time)])
+        deliveries.append([cities[random.randint(1, n_cities - 1)][0], max_time])
 
         return cities, dm, deliveries
 
 
-t1 = time.time()
-cities, dm, deliveries = ProblemGenerator.generate_dm(100, 300, 800, 1)
-dlv = DLV(cities, dm, deliveries)
-t2 = time.time()
-dlv.greedy_search(enable_print=False)
-t3 = time.time()
-dlv.show()
+# t1 = time.time()
+# cities, dm, deliveries = ProblemGenerator.generate_dm(50, 100, 500, 1, start_cargo=False)
+# dlv = DLV(cities, dm, deliveries)
+# # t2 = time.time()
+# # dlv.greedy_search(enable_print=False)
+# # t3 = time.time()
+# # dlv.show()
+# for i in range(10):
+#     dlv.reset()
+#     dlv.greedy_search(enable_print=False)
+#     dlv.show()
+#     print(str(dlv.time))
 
-print("Generation time = " + str(t2 - t1))
-print("Solve time = " + str(t3 - t2))
+
+
+# print("Generation time = " + str(t2 - t1))
+# print("Solve time = " + str(t3 - t2))
+# print("Loops = " + str(len(dlv.shortest_path)))
+
+
+
+for c in range(10,100, 10):
+    for d in range(10, 500, 10):
+        t = d*5
+        sum = 0
+        cities, dm, deliveries = ProblemGenerator.generate_dm(c, d, t, 1, start_cargo=True)
+        dlv = DLV(cities, dm, deliveries)
+        for i in range(10):
+            dlv.reset()
+            dlv.greedy_search(enable_print=False)
+            sum += dlv.time
+        print(str(sum/10))
+fig = plt.figure(figsize=(7, 3))
+ax = fig.add_subplot(131, title='imshow: square bins')
+plt.imshow(H, interpolation='nearest', origin='low', extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]])
+

@@ -302,7 +302,7 @@ class ProblemGenerator:
 
 
 t1 = time.time()
-cities, dm, deliveries = ProblemGenerator.generate_dm(200, 600, 1600, 1)
+cities, dm, deliveries = ProblemGenerator.generate_dm(100, 300, 800, 1)
 dlv = DLV(cities, dm, deliveries)
 t2 = time.time()
 dlv.greedy_search(enable_print=False)

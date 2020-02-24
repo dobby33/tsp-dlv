@@ -287,7 +287,7 @@ class DLV:
 
 class ProblemGenerator:
     @staticmethod
-    def generate_dm(n_cities, n_deliveries, max_time=1000, seed=1, start_cargo = True):
+    def generate_dm(n_cities, n_deliveries, max_time=1000, seed=1, start_cargo=True):
         cities = []
         if seed is not None:
             random.seed(seed)
@@ -313,49 +313,55 @@ class ProblemGenerator:
         deliveries = []
 
         if start_cargo:
-            for i in range(1, min(n_cities, n_deliveries-1)):
+            for i in range(1, min(n_cities, n_deliveries - 1)):
                 if random.random() < 0.1:
                     deliveries.append([cities[i][0], 0])
-        while len(deliveries) < n_deliveries-1:
+        while len(deliveries) < n_deliveries - 1:
             deliveries.append([cities[random.randint(1, n_cities - 1)][0], random.randint(0, max_time)])
         deliveries.append([cities[random.randint(1, n_cities - 1)][0], max_time])
 
         return cities, dm, deliveries
 
 
-# t1 = time.time()
-# cities, dm, deliveries = ProblemGenerator.generate_dm(50, 100, 500, 1, start_cargo=False)
-# dlv = DLV(cities, dm, deliveries)
-# # t2 = time.time()
-# # dlv.greedy_search(enable_print=False)
-# # t3 = time.time()
-# # dlv.show()
-# for i in range(10):
-#     dlv.reset()
-#     dlv.greedy_search(enable_print=False)
-#     dlv.show()
-#     print(str(dlv.time))
+t1 = time.time()
+cities, dm, deliveries = ProblemGenerator.generate_dm(500, 1000, 10000, 1, start_cargo=False)
+dlv = DLV(cities, dm, deliveries)
+t2 = time.time()
+dlv.greedy_search(enable_print=False)
+t3 = time.time()
+dlv.show()
 
 
 
-# print("Generation time = " + str(t2 - t1))
-# print("Solve time = " + str(t3 - t2))
-# print("Loops = " + str(len(dlv.shortest_path)))
+print("Generation time = " + str(t2 - t1))
+print("Solve time = " + str(t3 - t2))
+print("Loops = " + str(len(dlv.shortest_path)))
 
 
-
-for c in range(10,100, 10):
-    for d in range(10, 500, 10):
-        t = d*5
-        sum = 0
-        cities, dm, deliveries = ProblemGenerator.generate_dm(c, d, t, 1, start_cargo=True)
-        dlv = DLV(cities, dm, deliveries)
-        for i in range(10):
-            dlv.reset()
-            dlv.greedy_search(enable_print=False)
-            sum += dlv.time
-        print(str(sum/10))
-fig = plt.figure(figsize=(7, 3))
-ax = fig.add_subplot(131, title='imshow: square bins')
-plt.imshow(H, interpolation='nearest', origin='low', extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]])
-
+# itt = 6
+# i_arr = []
+# for c in range(10, 151, 10):
+#     j_arr = []
+#     for d in range(50, 801, 50):
+#         t = d *7
+#         sum = 0
+#         for i in range(int(itt/2)):
+#             cities, dm, deliveries = ProblemGenerator.generate_dm(c, d, t, 1, start_cargo=True)
+#             dlv = DLV(cities, dm, deliveries)
+#             for _ in range(2):
+#                 dlv.reset()
+#                 dlv.greedy_search(enable_print=False)
+#                 sum += dlv.time
+#         j_arr.append((sum / itt) - t)
+#     i_arr.append(j_arr)
+#     print(c)
+#
+# arr = np.array(i_arr)
+# plt.imshow(arr, interpolation="none", aspect="auto", cmap='hot')
+# plt.colorbar()
+# plt.xlabel('deliveries')
+# plt.ylabel('cities')
+# plt.title('Average completion time over ' + str(itt) + ' runs')
+# plt.yticks(range(len(range(10, 151, 10))), range(10, 201, 10))
+# plt.xticks(range(len(range(50, 501, 50))), range(50, 501, 50))
+# plt.show()
